@@ -66,6 +66,7 @@ const IndividualOrder: React.FC<IndividualOrderProps> = ({
       </div>
       {individualOrders.map((person, index) => (
         <PersonOrder
+          key={index}
           person={person}
           personIndex={index}
           addOrder={addOrder}
