@@ -96,6 +96,11 @@
       conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) 51% repeat-x;
   }
 
+  /* Carimbo de "PAGO", como o do caixa do bar */
+  .stamp {
+    @apply inline-block -rotate-6 rounded-[5px] border-2 border-danger px-1.5 py-px font-mono text-[10.5px] font-bold uppercase leading-tight tracking-[0.18em] text-danger;
+  }
+
   .field-input {
     @apply w-full rounded-xl border-[1.5px] border-line bg-surface-2 px-3.5 py-3 text-base text-ink placeholder:text-muted/70 focus:border-pen focus:outline-none;
   }

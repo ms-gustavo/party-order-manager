@@ -37,3 +37,9 @@ export function parsePercent(input: string): number | null {
   if (!/^\d+(\.\d+)?$/.test(s)) return null;
   return Number(s);
 }
+
+/** Próximos valores "redondos" acima de um valor: R$ 31,90 → 32, 35, 40. */
+export function roundUpOptions(cents: number): number[] {
+  const next = (step: number) => (Math.floor(cents / step) + 1) * step;
+  return [...new Set([next(100), next(500), next(1000)])];
+}

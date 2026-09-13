@@ -43,3 +43,14 @@ Cypress.Commands.add(
 Cypress.Commands.add("receiptTotalOf", (name: string) =>
   cy.get(`[data-testid="receipt-row"][data-person-name="${name}"] [data-testid="receipt-row-total"]`)
 );
+
+Cypress.Commands.add("openPerson", (name: string) => {
+  cy.contains('[data-testid="person-open"]', name).click();
+  cy.byTestId("person-sheet").should("be.visible");
+});
+
+Cypress.Commands.add("settle", (name: string) => {
+  cy.openPerson(name);
+  cy.byTestId("person-settle").click();
+  cy.byTestId("person-sheet").should("not.exist");
+});

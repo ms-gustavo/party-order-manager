@@ -7,7 +7,10 @@ Funciona offline e pode ser instalado na tela inicial do celular (PWA). Os dados
 ## Funcionalidades
 
 - **Pessoas na mesa**: adicione várias em sequência, remova quando alguém for embora.
-- **Pedidos com quem consumiu**: por padrão o item é de todos; toque no chip do item pra escolher pessoas específicas.
+- **Pedidos com quem consumiu**: por padrão o item é de todos que estão na mesa naquele momento (quem chega depois não entra na divisão do que foi pedido antes); toque no chip do item pra escolher pessoas específicas.
+- **Pagou e foi embora**: toque na pessoa e feche a conta dela. O valor fica congelado (nem a mudança de taxa mexe), os itens que ela dividiu ficam travados e o rodapé passa a mostrar quanto falta pagar. O **+** de um item travado lança um pedido novo só com quem ficou. Dá pra desfazer o pagamento.
+- **Pagou diferente do que devia**: o valor pago é editável (com atalhos de arredondar, ex.: R$ 31,90 → R$ 32 · R$ 35 · R$ 40) e dá pra corrigir depois. O que falta pagar é sempre `total da mesa − já pago`, repartido entre quem está na mesa na proporção do que cada um gastou: quem pagou a mais vira desconto, quem pagou a menos vira acréscimo. Se pagarem mais que a mesa inteira, aparece o troco a devolver.
+- **Remover da mesa** fica pra quem foi cadastrado errado: o consumo volta pra divisão de quem ficou.
 - **Quantidade** com − e +, e **arrastar pro lado** pra remover o item.
 - **Taxa de serviço ajustável**: atalhos de 0, 8, 10, 12 e 15%, ou qualquer valor até 30%.
 - **Fechamento por pessoa**, com consumo e taxa separados. Centavos que sobram na divisão vão pra quem vem primeiro na lista, então a soma sempre bate com o total.

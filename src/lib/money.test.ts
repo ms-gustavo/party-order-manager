@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatBRL, formatPercent, parseBRL, parsePercent } from "./money";
+import { formatBRL, formatPercent, parseBRL, parsePercent, roundUpOptions } from "./money";
 
 describe("parseBRL", () => {
   it.each([
@@ -35,5 +35,13 @@ describe("formatação", () => {
 
   it("usa vírgula na porcentagem", () => {
     expect(formatPercent(12.5)).toBe("12,5%");
+  });
+});
+
+describe("roundUpOptions", () => {
+  it("sugere valores redondos acima do devido, sem repetir", () => {
+    expect(roundUpOptions(3190)).toEqual([3200, 3500, 4000]);
+    expect(roundUpOptions(3000)).toEqual([3100, 3500, 4000]);
+    expect(roundUpOptions(990)).toEqual([1000]);
   });
 });

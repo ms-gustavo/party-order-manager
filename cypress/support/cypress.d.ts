@@ -11,5 +11,7 @@ declare namespace Cypress {
     ): Chainable<Subject>;
     shouldShowMoney(expected: string): Chainable<Subject>;
     receiptTotalOf(name: string): Chainable<JQuery<HTMLElement>>;
+    openPerson(name: string): Chainable<Subject>;
+    settle(name: string): Chainable<Subject>;
   }
 }

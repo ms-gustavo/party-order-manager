@@ -1,4 +1,4 @@
-import type { BillState } from "../types";
+import type { BillState, Payment } from "../types";
 import { clampTip } from "../lib/bill";
 import { initialState } from "./reducer";
 
@@ -6,8 +6,22 @@ export const STORAGE_KEY = "comanda:v1";
 const LEGACY_KEYS = ["sharedOrders", "individualOrders", "people"];
 
 const isString = (v: unknown): v is string => typeof v === "string";
-const isPositiveInt = (v: unknown, min: number): v is number =>
+const isIntAtLeast = (v: unknown, min: number): v is number =>
   Number.isInteger(v) && (v as number) >= min;
+
+function parsePayment(raw: unknown): Payment | null {
+  if (!raw || typeof raw !== "object") return null;
+  const p = raw as Record<string, unknown>;
+  if (
+    !isIntAtLeast(p.consumption, 0) ||
+    !isIntAtLeast(p.tip, 0) ||
+    !isIntAtLeast(p.amount, 0) ||
+    typeof p.at !== "number"
+  ) {
+    return null;
+  }
+  return { consumption: p.consumption, tip: p.tip, amount: p.amount, at: p.at };
+}
 
 /** Garante que o que veio do localStorage tem o formato esperado. */
 export function parseState(raw: unknown): BillState | null {
@@ -17,27 +31,32 @@ export function parseState(raw: unknown): BillState | null {
   if (!Array.isArray(s.people) || !Array.isArray(s.items)) return null;
   if (typeof s.tipPercent !== "number" || !isString(s.tableName)) return null;
 
-  const people = s.people.filter(
-    (p): p is BillState["people"][number] =>
-      !!p && isString(p.id) && isString(p.name) && isString(p.color)
-  );
-  const personIds = new Set(people.map((p) => p.id));
+  const people = s.people
+    .filter((p) => !!p && isString(p.id) && isString(p.name) && isString(p.color))
+    .map((p) => ({ id: p.id, name: p.name, color: p.color, paid: parsePayment(p.paid) }));
+  const personIds = people.map((p) => p.id);
 
   const items = s.items
     .filter(
-      (i): i is BillState["items"][number] =>
+      (i) =>
         !!i &&
         isString(i.id) &&
         isString(i.name) &&
-        isPositiveInt(i.unitPrice, 1) &&
-        isPositiveInt(i.quantity, 1) &&
+        isIntAtLeast(i.unitPrice, 1) &&
+        isIntAtLeast(i.quantity, 1) &&
+        // `null` era "todos" na primeira versão do modelo
         (i.consumerIds === null ||
           (Array.isArray(i.consumerIds) && i.consumerIds.every(isString)))
     )
     .map((i) => {
-      if (!i.consumerIds) return i;
-      const consumerIds = i.consumerIds.filter((id) => personIds.has(id));
-      return { ...i, consumerIds: consumerIds.length ? consumerIds : null };
+      const known = (i.consumerIds ?? personIds).filter((id: string) => personIds.includes(id));
+      return {
+        id: i.id as string,
+        name: i.name as string,
+        unitPrice: i.unitPrice as number,
+        quantity: i.quantity as number,
+        consumerIds: known.length ? known : personIds,
+      };
     });
 
   return {
