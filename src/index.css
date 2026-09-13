@@ -1,3 +1,123 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Paleta de boteco, em canais RGB pra funcionar com a opacidade do Tailwind.
+ * caneta BIC · mesa de plástico amarela · comanda em papel carbono · carimbo
+ */
+:root {
+  --ground: 239 238 234;
+  --surface: 255 255 255;
+  --surface-2: 245 244 240;
+  --ink: 28 31 42;
+  --muted: 98 102 117;
+  --line: 220 218 211;
+  --pen: 31 63 158;
+  --pen-soft: 227 232 247;
+  --pen-ink: 255 255 255;
+  --hi: 246 200 35;
+  --hi-soft: 252 239 180;
+  --hi-ink: 74 55 0;
+  --danger: 199 50 31;
+  --receipt: 251 241 191;
+  --receipt-line: 217 199 126;
+  --foot-bg: 31 63 158;
+  --foot-ink: 255 255 255;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: 17 18 23;
+    --surface: 26 28 35;
+    --surface-2: 34 37 46;
+    --ink: 236 234 227;
+    --muted: 154 157 170;
+    --line: 46 49 59;
+    --pen: 143 168 245;
+    --pen-soft: 35 43 69;
+    --pen-ink: 15 20 38;
+    --hi: 246 200 35;
+    --hi-soft: 58 49 19;
+    --hi-ink: 251 224 138;
+    --danger: 238 107 85;
+    --receipt: 42 39 22;
+    --receipt-line: 87 80 44;
+    --foot-bg: 42 74 174;
+    --foot-ink: 255 255 255;
+    color-scheme: dark;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-ground text-ink font-sans antialiased;
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-pen;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+  }
+}
+
+@layer components {
+  .section-label {
+    @apply flex items-baseline justify-between px-1 text-[11.5px] font-bold uppercase tracking-[0.1em] text-muted;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .fade-right {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+  }
+
+  /* Bordas serrilhadas de comanda destacada do bloco */
+  .receipt-edge {
+    --tooth: 12px;
+    -webkit-mask:
+      conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--tooth) 51% repeat-x,
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) 51% repeat-x;
+    mask:
+      conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--tooth) 51% repeat-x,
+      conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tooth) 51% repeat-x;
+  }
+
+  .field-input {
+    @apply w-full rounded-xl border-[1.5px] border-line bg-surface-2 px-3.5 py-3 text-base text-ink placeholder:text-muted/70 focus:border-pen focus:outline-none;
+  }
+
+  .btn-primary {
+    @apply rounded-2xl bg-pen px-4 py-3.5 text-base font-bold text-pen-ink transition active:scale-[0.98] disabled:opacity-50;
+  }
+
+  .btn-ghost {
+    @apply rounded-2xl border border-line px-4 py-3 font-semibold text-ink transition hover:bg-surface-2;
+  }
+
+  .btn-danger {
+    @apply rounded-2xl bg-danger px-4 py-3.5 text-base font-bold text-white transition active:scale-[0.98];
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

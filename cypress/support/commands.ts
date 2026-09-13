@@ -1,32 +1,45 @@
 /// <reference types="cypress" />
 
-Cypress.Commands.add("checkPageHeader", () => {
-  cy.get("#app-container-header").should(
-    "contain.text",
-    "Gerenciador de Comanda"
-  );
-});
+Cypress.Commands.add("byTestId", (id: string) => cy.get(`[data-testid="${id}"]`));
 
-Cypress.Commands.add("addSharedOrder", (name: string, amount: number) => {
-  cy.get("#order-name").type(name);
-  cy.get("#order-amount").type(amount.toString());
-  cy.get("#add-order-button").click();
-});
-
-Cypress.Commands.add("addIndividualClient", (name: string) => {
-  cy.get("#individual-person-name").type(name);
-  cy.get("#individual-person-add-button").click();
-});
-
-Cypress.Commands.add("removeIndividualClient", (index: number) => {
-  cy.get(`#person-order-remove-button-${index}`).click();
+Cypress.Commands.add("addPeople", (...names: string[]) => {
+  cy.byTestId("add-person-button").click();
+  names.forEach((name) => {
+    cy.byTestId("add-person-input").type(`${name}{enter}`);
+  });
+  cy.byTestId("add-person-input").blur();
 });
 
 Cypress.Commands.add(
-  "addOrderToClient",
-  (index: number, itemName: string, amount: number) => {
-    cy.get(`#person-order-item-name-${index}`).type(itemName);
-    cy.get(`#person-order-item-amount-${index}`).type(amount.toString());
-    cy.get(`#person-order-add-order-button-${index}`).click();
+  "addItem",
+  (name: string, price: string, options: { quantity?: number; consumers?: string[] } = {}) => {
+    cy.byTestId("add-item-button").click();
+    cy.byTestId("add-item-sheet").within(() => {
+      cy.byTestId("new-item-name").type(name);
+      cy.byTestId("new-item-price").type(price);
+      for (let i = 1; i < (options.quantity ?? 1); i++) {
+        cy.byTestId("new-item-qty-plus").click();
+      }
+      options.consumers?.forEach((person) => {
+        cy.contains('[data-testid="consumer-option"]', person).click();
+      });
+      cy.byTestId("new-item-submit").click();
+    });
+    cy.byTestId("add-item-sheet").should("not.exist");
   }
+);
+
+Cypress.Commands.add(
+  "shouldShowMoney",
+  { prevSubject: true },
+  (subject: JQuery<HTMLElement>, expected: string) => {
+    // O Intl usa espaço não-quebrável depois de "R$"
+    cy.wrap(subject).should(($el) => {
+      expect($el.text().replace(/\s/g, " ")).to.eq(expected);
+    });
+  }
+);
+
+Cypress.Commands.add("receiptTotalOf", (name: string) =>
+  cy.get(`[data-testid="receipt-row"][data-person-name="${name}"] [data-testid="receipt-row-total"]`)
 );
