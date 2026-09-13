@@ -4,11 +4,14 @@ import Avatar from "./Avatar";
 
 interface PeopleBarProps {
   people: Person[];
+  /** Quem pode sair com um toque no ×: ainda não consumiu nada. */
+  removableIds: Set<string>;
   onAdd: (name: string) => void;
   onRemove: (id: string) => void;
+  onSelect: (id: string) => void;
 }
 
-export default function PeopleBar({ people, onAdd, onRemove }: PeopleBarProps) {
+export default function PeopleBar({ people, removableIds, onAdd, onRemove, onSelect }: PeopleBarProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [adding, setAdding] = useState(false);
@@ -62,24 +65,51 @@ export default function PeopleBar({ people, onAdd, onRemove }: PeopleBarProps) {
           {people.length === 0 && (
             <span className="py-1.5 pl-1 text-sm text-muted">Quem tá na mesa?</span>
           )}
-          {people.map((person) => (
-            <div
-              key={person.id}
-              data-testid="person-chip"
-              className="flex flex-none items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-1.5 text-sm font-semibold"
-            >
-              <Avatar person={person} />
-              {person.name}
-              <button
-                onClick={() => onRemove(person.id)}
-                aria-label={`Remover ${person.name}`}
-                data-testid="person-remove"
-                className="grid h-[22px] w-[22px] place-items-center rounded-full text-[15px] leading-none text-muted transition hover:bg-surface-2 hover:text-danger"
+          {people.map((person) => {
+            const removable = removableIds.has(person.id);
+            return (
+              <div
+                key={person.id}
+                data-testid="person-chip"
+                data-paid={!!person.paid}
+                className={`flex flex-none items-center rounded-full border text-sm font-semibold ${
+                  person.paid ? "border-dashed border-line bg-transparent" : "border-line bg-surface"
+                }`}
               >
-                ×
-              </button>
-            </div>
-          ))}
+                <button
+                  onClick={() => onSelect(person.id)}
+                  aria-label={person.paid ? `${person.name}, já pagou` : `${person.name}, ver conta`}
+                  data-testid="person-open"
+                  className={`flex items-center gap-2 rounded-full py-1 pl-1 ${removable ? "pr-1" : "pr-3"}`}
+                >
+                  <span className="relative">
+                    <Avatar person={person} className={person.paid ? "opacity-40 grayscale" : ""} />
+                    {person.paid && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -bottom-0.5 -right-0.5 grid h-3.5 w-3.5 place-items-center rounded-full bg-danger text-[9px] font-bold text-white ring-2 ring-ground"
+                      >
+                        ✓
+                      </span>
+                    )}
+                  </span>
+                  <span className={person.paid ? "text-muted line-through decoration-danger/60" : ""}>
+                    {person.name}
+                  </span>
+                </button>
+                {removable && (
+                  <button
+                    onClick={() => onRemove(person.id)}
+                    aria-label={`Remover ${person.name}`}
+                    data-testid="person-remove"
+                    className="mr-1.5 grid h-[22px] w-[22px] place-items-center rounded-full text-[15px] leading-none text-muted transition hover:bg-surface-2 hover:text-danger"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className="flex-none pb-0.5">

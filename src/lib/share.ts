@@ -17,8 +17,14 @@ export function buildShareText(state: BillState, date = new Date()): string {
   return [
     `🍻 *${title}* · ${day}`,
     "",
-    ...bill.rows.map((r) => `${r.person.name}: *${money(r.total)}*`),
+    ...bill.rows.map((r) =>
+      r.person.paid
+        ? `${r.person.name}: ${money(r.total)} ✅ pago`
+        : `${r.person.name}: *${money(r.total)}*`
+    ),
     "",
     totalLine,
+    ...(bill.paid > 0 ? [`Falta pagar: *${money(bill.remaining)}*`] : []),
+    ...(bill.change > 0 ? [`Troco a devolver: ${money(bill.change)}`] : []),
   ].join("\n");
 }

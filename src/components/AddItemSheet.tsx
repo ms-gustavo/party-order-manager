@@ -6,27 +6,39 @@ import ConsumerPicker from "./ConsumerPicker";
 import Sheet from "./Sheet";
 import Stepper from "./Stepper";
 
+export type ItemDraft = Pick<Item, "name" | "unitPrice" | "consumerIds">;
+
 interface AddItemSheetProps {
   open: boolean;
+  /** Só quem ainda está na mesa. */
   people: Person[];
+  /** Preenche o formulário, ex.: pedir de novo um item travado. */
+  draft?: ItemDraft | null;
   onClose: () => void;
   onAdd: (item: Omit<Item, "id">) => void;
 }
 
-export default function AddItemSheet({ open, people, onClose, onAdd }: AddItemSheetProps) {
+const priceToInput = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");
+
+export default function AddItemSheet({ open, people, draft, onClose, onAdd }: AddItemSheetProps) {
   return (
-    <Sheet open={open} title="Novo item" onClose={onClose} testId="add-item-sheet">
+    <Sheet open={open} title={draft ? "Pedir de novo" : "Novo item"} onClose={onClose} testId="add-item-sheet">
       {/* Montado só quando aberto, então o formulário sempre começa limpo */}
-      <AddItemForm people={people} onAdd={onAdd} />
+      <AddItemForm people={people} draft={draft} onAdd={onAdd} />
     </Sheet>
   );
 }
 
-function AddItemForm({ people, onAdd }: Pick<AddItemSheetProps, "people" | "onAdd">) {
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
+function AddItemForm({ people, draft, onAdd }: Pick<AddItemSheetProps, "people" | "draft" | "onAdd">) {
+  const allIds = people.map((p) => p.id);
+  const [name, setName] = useState(draft?.name ?? "");
+  const [price, setPrice] = useState(draft ? priceToInput(draft.unitPrice) : "");
   const [quantity, setQuantity] = useState(1);
-  const [consumerIds, setConsumerIds] = useState<string[] | null>(null);
+  // "Todos" é gravado como quem está na mesa agora
+  const [consumerIds, setConsumerIds] = useState<string[]>(() => {
+    const fromDraft = draft?.consumerIds.filter((id) => allIds.includes(id)) ?? [];
+    return fromDraft.length ? fromDraft : allIds;
+  });
   const [error, setError] = useState("");
 
   const submit = (e: FormEvent) => {
@@ -38,7 +50,7 @@ function AddItemForm({ people, onAdd }: Pick<AddItemSheetProps, "people" | "onAd
   };
 
   const toggle = (personId: string) => {
-    const next = toggleConsumer(consumerIds, personId, people.map((p) => p.id));
+    const next = toggleConsumer(consumerIds, personId, allIds);
     if (next !== undefined) setConsumerIds(next);
   };
 
@@ -100,7 +112,7 @@ function AddItemForm({ people, onAdd }: Pick<AddItemSheetProps, "people" | "onAd
         <ConsumerPicker
           people={people}
           value={consumerIds}
-          onSelectAll={() => setConsumerIds(null)}
+          onSelectAll={() => setConsumerIds(allIds)}
           onToggle={toggle}
         />
       </div>

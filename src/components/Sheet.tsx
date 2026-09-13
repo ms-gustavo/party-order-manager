@@ -6,10 +6,12 @@ interface SheetProps {
   onClose: () => void;
   children: ReactNode;
   testId?: string;
+  /** Foca o primeiro campo ao abrir. Desligue onde o teclado não deve subir sozinho. */
+  focusFirstField?: boolean;
 }
 
 /** Painel que sobe da parte de baixo da tela, estilo app de celular. */
-export default function Sheet({ open, title, onClose, children, testId }: SheetProps) {
+export default function Sheet({ open, title, onClose, children, testId, focusFirstField = true }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   // Em ref pra que um onClose recriado a cada render não roube o foco de volta
   const onCloseRef = useRef(onClose);
@@ -19,7 +21,9 @@ export default function Sheet({ open, title, onClose, children, testId }: SheetP
     if (!open) return;
 
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    const firstField = panelRef.current?.querySelector<HTMLElement>("input, button:not([data-scrim])");
+    const firstField = focusFirstField
+      ? panelRef.current?.querySelector<HTMLElement>("input, button:not([data-scrim])")
+      : null;
     (firstField ?? panelRef.current)?.focus();
 
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCloseRef.current();
@@ -32,7 +36,7 @@ export default function Sheet({ open, title, onClose, children, testId }: SheetP
       document.body.style.overflow = overflow;
       previouslyFocused?.focus();
     };
-  }, [open]);
+  }, [open, focusFirstField]);
 
   if (!open) return null;
 

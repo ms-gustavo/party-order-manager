@@ -2,15 +2,15 @@ import type { Person } from "../types";
 import Avatar from "./Avatar";
 
 interface ConsumerPickerProps {
+  /** Só quem ainda está na mesa. */
   people: Person[];
-  /** `null` = todos */
-  value: string[] | null;
+  value: string[];
   onSelectAll: () => void;
   onToggle: (personId: string) => void;
 }
 
 export default function ConsumerPicker({ people, value, onSelectAll, onToggle }: ConsumerPickerProps) {
-  const all = !value || people.every((p) => value.includes(p.id));
+  const all = people.every((p) => value.includes(p.id));
   const chip =
     "flex items-center gap-1.5 rounded-full border border-line bg-surface-2 py-1 text-[13px] font-semibold transition";
 
@@ -26,7 +26,7 @@ export default function ConsumerPicker({ people, value, onSelectAll, onToggle }:
         Todos
       </button>
       {people.map((person) => {
-        const selected = all || value!.includes(person.id);
+        const selected = all || value.includes(person.id);
         return (
           <button
             type="button"

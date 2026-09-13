@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
-import { computeBill, toggleConsumer } from "./lib/bill";
+import { activePeople, computeBill, isItemLocked, sharesLockedItem, toggleConsumer } from "./lib/bill";
+import { formatBRL } from "./lib/money";
 import { buildShareText } from "./lib/share";
 import { useBill } from "./state/useBill";
-import AddItemSheet from "./components/AddItemSheet";
+import AddItemSheet, { type ItemDraft } from "./components/AddItemSheet";
 import AppHeader from "./components/AppHeader";
 import BillFooter from "./components/BillFooter";
 import ItemCard from "./components/ItemCard";
 import PeopleBar from "./components/PeopleBar";
+import PersonSheet from "./components/PersonSheet";
 import Receipt from "./components/Receipt";
 import ShareSheet from "./components/ShareSheet";
 import Sheet from "./components/Sheet";
@@ -14,18 +16,34 @@ import TipControl from "./components/TipControl";
 import Toast from "./components/Toast";
 import { useToast } from "./hooks/useToast";
 
-type OpenSheet = "add" | "share" | "reset" | null;
+type OpenSheet = "add" | "share" | "reset" | { personId: string } | null;
 
 export default function App() {
   const [state, dispatch] = useBill();
   const [toast, notify] = useToast();
   const [sheet, setSheet] = useState<OpenSheet>(null);
+  const [draft, setDraft] = useState<ItemDraft | null>(null);
   const [swipedId, setSwipedId] = useState<string | null>(null);
 
   const bill = useMemo(() => computeBill(state), [state]);
   const closeSheet = () => setSheet(null);
   const { people, items } = state;
+  const active = activePeople(people);
+  const activeIds = active.map((p) => p.id);
   const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
+
+  // O × rápido só aparece pra quem ainda não tem nada na conta
+  const removableIds = new Set(
+    bill.rows.filter((r) => !r.person.paid && r.consumption === 0).map((r) => r.person.id)
+  );
+
+  const personId = typeof sheet === "object" && sheet ? sheet.personId : null;
+  const personRow = bill.rows.find((r) => r.person.id === personId) ?? null;
+
+  const openAddItem = (next: ItemDraft | null = null) => {
+    setDraft(next);
+    setSheet("add");
+  };
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col">
@@ -38,8 +56,10 @@ export default function App() {
       <main className="flex flex-col gap-3.5 px-3.5 pb-32">
         <PeopleBar
           people={people}
+          removableIds={removableIds}
           onAdd={(name) => dispatch({ type: "addPerson", name })}
           onRemove={(id) => dispatch({ type: "removePerson", id })}
+          onSelect={(id) => setSheet({ personId: id })}
         />
 
         <TipControl
@@ -71,20 +91,27 @@ export default function App() {
                   swiped={swipedId === item.id}
                   onSwipedChange={(swiped) => setSwipedId(swiped ? item.id : null)}
                   onQuantityChange={(delta) => {
+                    if (isItemLocked(item, people)) {
+                      return notify("Item travado: alguém que dividiu já pagou");
+                    }
                     if (item.quantity + delta < 1) {
                       return notify("Pra tirar o item, arraste pro lado");
                     }
                     dispatch({ type: "changeQuantity", id: item.id, delta });
                   }}
-                  onSelectAll={() => dispatch({ type: "setConsumers", id: item.id, consumerIds: null })}
-                  onToggleConsumer={(personId) => {
-                    const next = toggleConsumer(item.consumerIds, personId, people.map((p) => p.id));
+                  onSelectAll={() => dispatch({ type: "setConsumers", id: item.id, consumerIds: activeIds })}
+                  onToggleConsumer={(id) => {
+                    const next = toggleConsumer(item.consumerIds, id, activeIds);
                     if (next === undefined) return notify("Alguém tem que ter consumido");
                     dispatch({ type: "setConsumers", id: item.id, consumerIds: next });
                   }}
                   onRemove={() => {
                     dispatch({ type: "removeItem", id: item.id });
                     notify(`${item.name} removido`);
+                  }}
+                  onOrderAgain={() => {
+                    if (active.length === 0) return notify("Todo mundo já pagou");
+                    openAddItem({ name: item.name, unitPrice: item.unitPrice, consumerIds: item.consumerIds });
                   }}
                 />
               ))}
@@ -96,8 +123,8 @@ export default function App() {
           )}
 
           <button
-            onClick={() => setSheet("add")}
-            disabled={people.length === 0}
+            onClick={() => openAddItem()}
+            disabled={active.length === 0}
             data-testid="add-item-button"
             className="rounded-2xl border-[1.5px] border-dashed border-line p-3.5 text-[15px] font-bold text-pen transition hover:bg-surface disabled:cursor-not-allowed disabled:text-muted disabled:hover:bg-transparent"
           >
@@ -108,16 +135,45 @@ export default function App() {
         {people.length > 0 && <Receipt bill={bill} tipPercent={state.tipPercent} />}
       </main>
 
-      <BillFooter total={bill.total} tipPercent={state.tipPercent} onShare={() => setSheet("share")} />
+      <BillFooter bill={bill} tipPercent={state.tipPercent} onShare={() => setSheet("share")} />
 
       <AddItemSheet
         open={sheet === "add"}
-        people={people}
+        people={active}
+        draft={draft}
         onClose={closeSheet}
         onAdd={(item) => {
           dispatch({ type: "addItem", item });
           closeSheet();
           notify("Item adicionado");
+        }}
+      />
+
+      <PersonSheet
+        row={personRow}
+        tipPercent={state.tipPercent}
+        othersAtTable={active.some((p) => p.id !== personId)}
+        removalBlocked={!!personId && sharesLockedItem(personId, state)}
+        onClose={closeSheet}
+        onSettle={(person, amount) => {
+          dispatch({ type: "settlePerson", id: person.id, at: Date.now(), amount });
+          closeSheet();
+          notify(`Conta de ${person.name} fechada: ${formatBRL(amount)}`);
+        }}
+        onUpdatePayment={(person, amount) => {
+          dispatch({ type: "updatePayment", id: person.id, amount });
+          closeSheet();
+          notify(`Pagamento de ${person.name} corrigido: ${formatBRL(amount)}`);
+        }}
+        onUndo={(person) => {
+          dispatch({ type: "undoSettlement", id: person.id });
+          closeSheet();
+          notify(`Pagamento de ${person.name} desfeito`);
+        }}
+        onRemove={(person) => {
+          dispatch({ type: "removePerson", id: person.id });
+          closeSheet();
+          notify(`${person.name} saiu da mesa`);
         }}
       />
 
